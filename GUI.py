@@ -47,11 +47,15 @@ def audio_to_fft(audio):
     return tf.math.abs(fft[:, : (audio.shape[1] // 2), :])
 
 
-def prediction():
+def read_from_input_stream():
     audio_bytes = mic_stream.read(SAMPLING_RATE, exception_on_overflow=False)
     audio_np = np.frombuffer(audio_bytes, dtype=np.float32)
+    preprocess_audio(audio_np)
 
     
+
+
+def preprocess_audio(audio_np):
     audio_np = audio_np.reshape(-1,1)
     audio_tensor = tf.convert_to_tensor([audio_np], dtype=tf.float32)
     fft = audio_to_fft(audio_tensor)
@@ -66,10 +70,10 @@ def prediction():
         print(f"{class_names[idx]}: {probs[idx]:.2f}%")
 
     
-    root.after(3000, prediction)
+    root.after(1000, read_from_input_stream)
     
 
-root.after(3000, prediction)
+root.after(1000, read_from_input_stream)
 
 
 root.mainloop()
