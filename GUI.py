@@ -7,44 +7,81 @@ import numpy as np
 import pyaudio
 
 SAMPLING_RATE = 16000
-root = Tk()
-root.title("Test")
+MODEL_OPTIONS = ["500_samples", "1500_samples"]
+
 
 class ModelGUI():
 
 
     def __init__(self):
 
-        
+        self.root = Tk()
+        self.root.title("Test")
+        self.root.geometry("2560x1664")
 
-        self.model = keras.models.load_model("500_samples.keras")
+        self.model_name = "500_samples"
+        self.model = keras.models.load_model(f"{self.model_name}.keras")
         self.class_names = os.listdir("500_samples/audio")
 
         self.p = pyaudio.PyAudio()
-        self.input_stream = self.p.open(format = pyaudio.paFloat32, rate=SAMPLING_RATE, channels =1, input=True, frames_per_buffer=SAMPLING_RATE)
+        self.input_stream = self.p.open(
+            format = pyaudio.paFloat32, 
+            rate=SAMPLING_RATE, channels =1, 
+            input=True, 
+            frames_per_buffer=SAMPLING_RATE
+        )
 
 
         
-        root.geometry("2560x1664")
-        self.frame = Frame(root)
+        
+        self.frame = Frame(self.root)
         self.frame.pack()
 
-
-        self.label = Label(self.frame)
-        self.label.pack()
+        self.prediction_labels = self.create_labels()
+    
+        self.model_label = Label(self.frame, text=self.model_name, font=("Arial",16))
+        self.model_label.pack(pady=10)
         
 
         self.button_frame = Frame(self.frame)
-        self.button1 = Button(self.button_frame,text="BigBoy", command=self.change_model("1500_samples")).pack()
-        self.button2 = Button(self.button_frame,text="MediumBoy",command=self.change_model("500_samples")).pack()
-        self.button_frame.pack()
+        self.button_frame.pack(pady=20)
+        self.create_model_buttons()
+        
 
+    def create_labels(self):
+        prediction_labels =[]
+        for i in range(3):
+            label = Label(
+                self.frame,
+                text="", 
+                font=("Arial",30)
+            )
+            label.pack(pady=20)
+            prediction_labels.append(label)
+        return prediction_labels
 
+    def create_model_buttons(self):
+        for name in MODEL_OPTIONS:
+            btn = Button(
+                self.button_frame,
+                text=name,
+                font=("Arial",14),
+                width=12,
+                command=lambda: self.change_model(name)
+            )
+            btn.pack(side=LEFT,padx=10)
 
 
 
     def change_model(self,model_name):
-        self.model = keras.models.load_model(f'{model_name}.keras')
+        try:
+            self.model = keras.models.load_model(f'{model_name}.keras')
+            self.model_label.config(text= model_name)
+            self.model_name = model_name
+            print(f'Model changed to {model_name}')
+        except Exception as e:
+            print(f'Failed to load model {model_name}')
+  
 
 
 
@@ -73,40 +110,44 @@ class ModelGUI():
         
     def predict_speaker(self,fft):
         pred = self.model.predict(fft)[0]
-        predicted_speaker_idx = np.argmax(pred)
-        self.display_prediction(predicted_speaker_idx)
+        
 
 
         probs = pred * 100  
         sorted_idx = np.argsort(probs)[::-1]
+        self.display_prediction(sorted_idx)
         
         for idx in sorted_idx:
             print(f"{self.class_names[idx]}: {probs[idx]:.2f}%")
 
 
 
-    def display_prediction(self,speaker_idx):
+    def display_prediction(self,sorted_idx):
         print("Sannolikheter:")
         
-        self.label['text'] = self.class_names[speaker_idx]
-        self.label.pack()
-
-
-
+        for i in range(3):
+            self.prediction_labels[i].config(text=f'{i+1}. {self.class_names[sorted_idx[i]]}')
+        
         #start the prediction loop again
-        root.after(1000, self.read_from_input_stream)
+        self.root.after(1000, self.read_from_input_stream)
+
+    def main(self):
+        self.root.after(1000, gui.read_from_input_stream)
+        self.root.mainloop()
 
 
-    def terminate_streams(self):
+    def destroy(self):
         self.input_stream.stop_stream()
         self.input_stream.close()
         self.p.terminate()
+        self.root.destroy()
 
 
-gui = ModelGUI()
-root.after(1000, gui.read_from_input_stream)
+if __name__ == "__main__":
+ 
+    gui = ModelGUI()
+    try:
+        gui.main()
+    except KeyboardInterrupt:
+        gui.destroy()
 
-
-root.mainloop()
-gui.terminate_streams()
-root.destroy()
