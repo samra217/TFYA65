@@ -12,7 +12,7 @@ import keras
 from pathlib import Path
 from IPython.display import display, Audio
 
-DATASET_ROOT = "16000_pcm_speeches"
+DATASET_ROOT = "500_samples"
 
 AUDIO_SUBFOLDER = "audio"
 NOISE_SUBFOLDER = "noise"
@@ -296,7 +296,7 @@ model.compile(
 # Add callbacks:
 # 'EarlyStopping' to stop training when the model is not enhancing anymore
 # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-model_save_filename = "TFYA65.keras"
+model_save_filename = "familj.keras"
 
 earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
 mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
