@@ -38,13 +38,20 @@ def preprocess_audio(file_path):
     return fft_tensor
 
 # Load your saved model
-model = keras.models.load_model("TFYA65.keras")
+model = keras.models.load_model("1000_samples.keras")
 
 # Class names (must be in the same order as training!)
 class_names = os.listdir("16000_pcm_speeches/audio")
 
 # Pick a test file
-test_file = "/Users/samuelswahnrasch/Documents/TFYA65/16000_pcm_speeches/audio/Benjamin_Netanyau/1480.wav"
+test_file = "/Users/samuelswahnrasch/Documents/TFYA65/16000_pcm_speeches/audio/Adam/1499.wav"
+
+
+
+
+
+
+
 x = preprocess_audio(test_file)
 
 

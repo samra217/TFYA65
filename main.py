@@ -12,7 +12,10 @@ import keras
 from pathlib import Path
 from IPython.display import display, Audio
 
-DATASET_ROOT = "500_samples"
+
+AMOUNT_OF_SAMPLES  = 1250
+
+DATASET_ROOT = "16000_pcm_speeches"
 
 AUDIO_SUBFOLDER = "audio"
 NOISE_SUBFOLDER = "noise"
@@ -187,19 +190,17 @@ for label, name in enumerate(class_names):
     )
     dir_path = Path(DATASET_AUDIO_PATH) / name
     
-    # OBS: detta är på grund av att macOS lägger till en .DStore fil, som kraschar programmet
-    # måste kontrollera så att det faktiskt är ett directory
-    if dir_path.is_dir():
-        speaker_sample_paths = [
-            os.path.join(dir_path, filepath)
-            for filepath in os.listdir(dir_path)
-            if filepath.endswith(".wav")
-        ]
-    else: 
-        speaker_sample_paths = []
+
+    speaker_sample_paths = [
+        os.path.join(dir_path, filepath)
+        for filepath in os.listdir(dir_path)
+        if filepath.endswith(".wav")
+    ]
+    speaker_sample_paths = speaker_sample_paths[:AMOUNT_OF_SAMPLES]
 
     audio_paths += speaker_sample_paths
     labels += [label] * len(speaker_sample_paths)
+
 
 print(
     "Found {} files belonging to {} classes.".format(len(audio_paths), len(class_names))
@@ -296,9 +297,9 @@ model.compile(
 # Add callbacks:
 # 'EarlyStopping' to stop training when the model is not enhancing anymore
 # 'ModelCheckPoint' to always keep the model that has the best val_accuracy
-model_save_filename = "familj.keras"
+model_save_filename = f"{AMOUNT_OF_SAMPLES}_samples.keras"
 
-earlystopping_cb = keras.callbacks.EarlyStopping(patience=10, restore_best_weights=True)
+earlystopping_cb = keras.callbacks.EarlyStopping(patience=6, restore_best_weights=True)
 mdlcheckpoint_cb = keras.callbacks.ModelCheckpoint(
     model_save_filename, monitor="val_accuracy", save_best_only=True
 )
@@ -310,3 +311,16 @@ history = model.fit(
     validation_data = valid_ds,
     callbacks = [earlystopping_cb, mdlcheckpoint_cb],
 )
+
+train_loss= history.history['loss']
+train_accuracy = history.history['accuracy']
+
+val_loss = history.history['val_loss']
+val_accuracy = history.history["val_accuracy"]
+
+
+
+print("Final training loss:", train_loss[-1])
+print("Final training accuracy:", train_accuracy[-1])
+print("Final validation loss:", val_loss[-1])
+print("Final validation accuracy:", val_accuracy[-1])

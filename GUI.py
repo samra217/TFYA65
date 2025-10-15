@@ -7,7 +7,7 @@ import numpy as np
 import pyaudio
 
 SAMPLING_RATE = 16000
-MODEL_OPTIONS = ["500_samples", "1500_samples"]
+MODEL_OPTIONS = ["500_samples", "1000_samples","1250_samples"]
 
 
 class ModelGUI():
@@ -21,7 +21,7 @@ class ModelGUI():
 
         self.model_name = "500_samples"
         self.model = keras.models.load_model(f"{self.model_name}.keras")
-        self.class_names = os.listdir("500_samples/audio")
+        self.class_names = os.listdir("16000_pcm_speeches/audio")
 
         self.p = pyaudio.PyAudio()
         self.input_stream = self.p.open(
@@ -50,7 +50,7 @@ class ModelGUI():
 
     def create_labels(self):
         prediction_labels =[]
-        for i in range(3):
+        for i in range(len(self.class_names)):
             label = Label(
                 self.frame,
                 text="", 
@@ -67,18 +67,36 @@ class ModelGUI():
                 text=name,
                 font=("Arial",14),
                 width=12,
-                command=lambda: self.change_model(name)
+                command=lambda n=name: self.change_model(n)
             )
             btn.pack(side=LEFT,padx=10)
 
 
 
     def change_model(self,model_name):
+        if self.model_name == model_name:
+            print("Same model selected, fuck you, jag har ont om beräkningskapacitet")
+            return
         try:
+            old_model = self.model
+            print(model_name)
             self.model = keras.models.load_model(f'{model_name}.keras')
             self.model_label.config(text= model_name)
             self.model_name = model_name
-            print(f'Model changed to {model_name}')
+           
+            same_weights = all(
+                np.array_equal(a, b)
+                for a, b in zip(self.model.get_weights(), old_model.get_weights())
+            )
+            if same_weights:
+                print("Loaded identical model weights.")
+            else:
+                print(f'Model changed to {model_name}')
+        
+            
+
+            
+            
         except Exception as e:
             print(f'Failed to load model {model_name}')
   
@@ -115,18 +133,18 @@ class ModelGUI():
 
         probs = pred * 100  
         sorted_idx = np.argsort(probs)[::-1]
-        self.display_prediction(sorted_idx)
+        self.display_prediction(sorted_idx, probs)
         
         for idx in sorted_idx:
             print(f"{self.class_names[idx]}: {probs[idx]:.2f}%")
 
 
 
-    def display_prediction(self,sorted_idx):
+    def display_prediction(self,sorted_idx, probs):
         print("Sannolikheter:")
         
-        for i in range(3):
-            self.prediction_labels[i].config(text=f'{i+1}. {self.class_names[sorted_idx[i]]}')
+        for i in range(len(self.class_names)):
+            self.prediction_labels[i].config(text=f'{self.class_names[sorted_idx[i]]}: {probs[sorted_idx[i]]:.2f}%')
         
         #start the prediction loop again
         self.root.after(1000, self.read_from_input_stream)
